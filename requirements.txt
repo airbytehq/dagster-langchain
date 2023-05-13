@@ -1,0 +1,7 @@
+-e .
+# For lint
+black
+ruff
+# For build
+build
+twine
