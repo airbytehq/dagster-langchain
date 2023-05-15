@@ -15,40 +15,24 @@ with open(vectorstore_file, "rb") as f:
     local_vectorstore: VectorStore = pickle.load(f)
 
 
-def GetVector():
-    return RetrievalQA.from_chain_type(
-        llm=llm, chain_type="stuff", retriever=local_vectorstore.as_retriever()
-    )
-
-
-def GetTool():
-    # Update on change
-    return Tool(
+llm = OpenAI(temperature=0)
+tools = [
+    Tool(
         name="Local Car Shop QA System",
-        func=GetVector().run,
+        func=RetrievalQA.from_chain_type(
+            llm=llm, chain_type="stuff", retriever=local_vectorstore.as_retriever()
+        ).run,
         description="""Useful for when you need to answer questions about cars for sale. 
         Input should be a fully formed question.""",
     )
+]
 
-llm = OpenAI(temperature=0)
-tools = [GetTool()]
+qa = initialize_agent(tools, llm, agent="zero-shot-react-description", verbose=True)
 
-
-def get_agent():
-    return initialize_agent(
-        tools, llm, agent="zero-shot-react-description", verbose=True
-    )
-
-
-if __name__ == "__main__":
-    qa = get_agent()
-    print("Chat Langchain Demo")
-    print("Ask a question to begin:")
-    while True:
-        query = input("")
-        answer = qa.run(query)
-        print(answer)
-        print("\nWhat else can I help you with:")
-
-
-llm = OpenAI(temperature=0)
+print("Chat Langchain Demo")
+print("Ask a question to begin:")
+while True:
+    query = input("")
+    answer = qa.run(query)
+    print(answer)
+    print("\nWhat else can I help you with:")
