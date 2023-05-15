@@ -1,4 +1,6 @@
-from langchain import OpenAI, VectorDBQA
+from langchain import OpenAI
+from langchain.vectorstores import VectorStore
+from langchain.chains import RetrievalQA
 from langchain.agents import Tool
 from langchain.llms import OpenAI
 from langchain.agents import initialize_agent
@@ -10,12 +12,12 @@ vectorstore_file = "vectorstore_vectorstore.pkl"
 
 with open(vectorstore_file, "rb") as f:
     global vectorstore
-    local_vectorstore = pickle.load(f)
+    local_vectorstore: VectorStore = pickle.load(f)
 
 
 def GetVector():
-    return VectorDBQA.from_chain_type(
-        llm=llm, chain_type="stuff", vectorstore=local_vectorstore
+    return RetrievalQA.from_chain_type(
+        llm=llm, chain_type="stuff", retriever=local_vectorstore.as_retriever()
     )
 
 
