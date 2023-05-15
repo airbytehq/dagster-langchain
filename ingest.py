@@ -64,9 +64,6 @@ airbyte_loader = AirbyteJSONLoader(
     },
 )
 def raw_documents(airbyte_data):
-    print("XXXXX")
-    print(airbyte_data)
-    print("XXXXX")
     """Load the raw document text from the source."""
     return airbyte_loader.load()
 

@@ -1,7 +1,0 @@
-# For examples
-openai
-pinecone-client
-weaviate-client
-faiss-cpu
-requests
-beautifulsoup4
