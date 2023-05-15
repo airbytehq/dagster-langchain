@@ -5,3 +5,9 @@ weaviate-client
 faiss-cpu
 requests
 beautifulsoup4
+tiktoken
+dagster_managed_elements
+langchain
+dagster
+dagster-airbyte
+dagit

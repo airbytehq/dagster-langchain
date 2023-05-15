@@ -7,7 +7,14 @@ from dagster import (
     asset,
     build_asset_reconciliation_sensor,
 )
-from dagster_airbyte import load_assets_from_airbyte_instance, AirbyteResource
+from dagster_airbyte.managed.generated.sources import (
+    FakerSource,
+)
+from dagster_airbyte.managed.generated.destinations import (
+    LocalJsonDestination,
+)
+
+from dagster_airbyte import load_assets_from_connections, AirbyteResource, AirbyteConnection, AirbyteSyncMode
 from langchain.document_loaders import AirbyteJSONLoader
 from langchain.text_splitter import TextSplitter
 from langchain.embeddings.base import Embeddings
@@ -43,17 +50,40 @@ airbyte_instance = AirbyteResource(
     port="8000",
 )
 
-airbyte_assets = load_assets_from_airbyte_instance(
-    airbyte_instance,
-    key_prefix="airbyte_asset",
-)
-
 
 # Airbyte loader
 airbyte_loader = AirbyteJSONLoader(
-    "/tmp/airbyte_local/local_json/products/_airbyte_raw_products.jsonl"
+    "/tmp/airbyte_local/_airbyte_raw_products.jsonl"
 )
 
+airbyte_source = FakerSource(
+    name="fake_source",
+    count=1000,
+    seed=-1,
+    records_per_sync=1000,
+    records_per_slice=1000,
+)
+
+airbyte_destination = LocalJsonDestination(
+    name="local_json_destination",
+    destination_path=f"/local/",
+)
+
+data_connection = AirbyteConnection(
+    name="fetch_sample_data",
+    source=airbyte_source,
+    destination=airbyte_destination,
+    stream_config={
+        "products": AirbyteSyncMode.full_refresh_overwrite(),
+    },
+    normalize_data=False,
+)
+
+airbyte_assets = load_assets_from_connections(
+    airbyte=airbyte_instance,
+    connections=[data_connection],
+    key_prefix=["airbyte_asset"],
+)
 
 @asset(
     name="raw_documents",
@@ -64,9 +94,7 @@ airbyte_loader = AirbyteJSONLoader(
     },
 )
 def raw_documents(airbyte_data):
-    print("XXXXX")
     print(airbyte_data)
-    print("XXXXX")
     """Load the raw document text from the source."""
     return airbyte_loader.load()
 
