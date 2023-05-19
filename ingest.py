@@ -19,25 +19,6 @@ from langchain.embeddings import OpenAIEmbeddings
 import pickle
 from typing import List
 
-def split_documents(
-    documents: List[Document], text_splitter: TextSplitter
-) -> List[Document]:
-    return text_splitter.split_documents(documents)
-
-
-def create_embeddings_vectorstore(
-    documents: List[Document], embeddings: Embeddings, vectorstorecls: VectorStore
-):
-    return vectorstorecls.from_documents(documents, embeddings)
-
-
-def save_vectorstore_to_disk(name, vectorstore):
-    filename = f"{name}_vectorstore.pkl"
-    with open(filename, "wb") as f:
-        pickle.dump(vectorstore, f)
-    return filename
-
-
 airbyte_instance = AirbyteResource(
     host="localhost",
     port="8000",
@@ -48,37 +29,11 @@ airbyte_assets = load_assets_from_airbyte_instance(
     key_prefix="airbyte_asset",
 )
 
-import json
-from typing import List
-
-from langchain.docstore.document import Document
-from langchain.document_loaders.base import BaseLoader
-from langchain.utils import stringify_dict
-
-
-class BetterAirbyteJSONLoader(BaseLoader):
-    """Loader that loads local airbyte json files."""
-
-    def __init__(self, file_path: str):
-        """Initialize with file path. This should start with '/tmp/airbyte_local/'."""
-        self.file_path = file_path
-
-    def load(self) -> List[Document]:
-        """Load file."""
-        text = ""
-        for line in open(self.file_path, "r"):
-            data = json.loads(line)["_airbyte_data"]
-            text += stringify_dict(data)
-            # This helps the LLM to associate attributes with the correct entity
-            # text += "-End of record-"
-        metadata = {"source": self.file_path}
-        return [Document(page_content=text, metadata=metadata)]
-
-
+stream_name="Account"
 
 # Airbyte loader
-airbyte_loader = BetterAirbyteJSONLoader(
-    "/tmp/airbyte_local/_airbyte_raw_products.jsonl"
+airbyte_loader = AirbyteJSONLoader(
+	f"/tmp/airbyte_local/_airbyte_raw_{stream_name}.jsonl"
 )
 
 
@@ -86,9 +41,10 @@ airbyte_loader = BetterAirbyteJSONLoader(
     name="raw_documents",
     ins={
         "airbyte_data": AssetIn(
-            asset_key=["airbyte_asset", "products"], input_manager_key="airbyte_io_manager"
+            asset_key=["airbyte_asset", stream_name], input_manager_key="airbyte_io_manager"
         )
     },
+    compute_kind="langchain",
 )
 def raw_documents(airbyte_data):
     """Load the raw document text from the source."""
@@ -102,7 +58,7 @@ def raw_documents(airbyte_data):
 )
 def documents(raw_documents):
     """Split the documents into chunks that fit in the LLM context window."""
-    return split_documents(raw_documents, RecursiveCharacterTextSplitter(chunk_size=1000))
+    return RecursiveCharacterTextSplitter(chunk_size=1000).split_documents(raw_documents)
 
 
 @asset(
@@ -114,7 +70,7 @@ def documents(raw_documents):
 )
 def vectorstore(documents):
     """Compute embeddings and create a vector store."""
-    return create_embeddings_vectorstore(documents, OpenAIEmbeddings(), FAISS)
+    return FAISS.from_documents(documents, OpenAIEmbeddings())
 
 
 class VectorstoreIOManager(IOManager):
@@ -122,7 +78,9 @@ class VectorstoreIOManager(IOManager):
         raise NotImplementedError()
 
     def handle_output(self, context, obj):
-        filename = save_vectorstore_to_disk(context.step_key, obj)
+        filename = "vectorstore.pkl"
+        with open(filename, "wb") as f:
+            pickle.dump(vectorstore, f)
         context.add_output_metadata({"filename": filename})
 
 

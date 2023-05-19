@@ -18,11 +18,11 @@ with open(vectorstore_file, "rb") as f:
 llm = OpenAI(temperature=0)
 tools = [
     Tool(
-        name="Local Car Shop QA System",
+        name="CRM QA System",
         func=RetrievalQA.from_chain_type(
             llm=llm, chain_type="stuff", retriever=local_vectorstore.as_retriever()
         ).run,
-        description="""Useful for when you need to answer questions about cars for sale. 
+        description="""Useful for when you need to answer questions about customers.
         Input should be a fully formed question.""",
     )
 ]
