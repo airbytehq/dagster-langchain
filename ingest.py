@@ -91,9 +91,6 @@ class AirbyteIOManager(IOManager):
     def handle_output(self, context, obj):
         raise NotImplementedError()
 
-
-# Defs to output
-# Local vectorstore
 defs = Definitions(
     assets=[airbyte_assets, raw_documents, documents, vectorstore],
     resources={
