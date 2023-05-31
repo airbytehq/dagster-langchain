@@ -2,11 +2,10 @@ from langchain import OpenAI
 from langchain.vectorstores import VectorStore
 from langchain.chains import RetrievalQA
 from langchain.llms import OpenAI
-from langchain.agents import initialize_agent
 import pickle
 
 # Update on change
-vectorstore_file = "vectorstore_vectorstore.pkl"
+vectorstore_file = "vectorstore.pkl"
 
 with open(vectorstore_file, "rb") as f:
     global vectorstore
