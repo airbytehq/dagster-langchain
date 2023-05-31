@@ -11,7 +11,6 @@ from langchain.vectorstores.faiss import FAISS
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.embeddings import OpenAIEmbeddings
 import pickle
-from typing import List
 
 airbyte_instance = AirbyteResource(
     host="localhost",
@@ -25,7 +24,6 @@ airbyte_assets = load_assets_from_airbyte_instance(
 
 stream_name = "Account"
 
-# Airbyte loader
 airbyte_loader = AirbyteJSONLoader(
     f"/tmp/airbyte_local/_airbyte_raw_{stream_name}.jsonl"
 )
@@ -40,7 +38,6 @@ def raw_documents():
 
 @asset
 def documents(raw_documents):
-    """Split the documents into chunks that fit in the LLM context window."""
     return RecursiveCharacterTextSplitter(chunk_size=1000).split_documents(
         raw_documents
     )
