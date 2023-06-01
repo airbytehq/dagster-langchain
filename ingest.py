@@ -1,9 +1,7 @@
 from dagster import (
     AssetKey,
-    AssetSelection,
     Definitions,
     asset,
-    build_asset_reconciliation_sensor,
 )
 from dagster_airbyte import load_assets_from_airbyte_instance, AirbyteResource
 from langchain.document_loaders import AirbyteJSONLoader
@@ -50,12 +48,4 @@ def vectorstore(documents):
         pickle.dump(vectorstore_contents, f)
 
 
-defs = Definitions(
-    assets=[airbyte_assets, raw_documents, documents, vectorstore],
-    sensors=[
-        build_asset_reconciliation_sensor(
-            AssetSelection.all(),
-            name="reconciliation_sensor",
-        )
-    ],
-)
+defs = Definitions(assets=[airbyte_assets, raw_documents, documents, vectorstore])
